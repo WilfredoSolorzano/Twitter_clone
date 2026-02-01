@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/api';
+// Configuración dinámica para desarrollo/producción
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://wilfredo22.pythonanywhere.com/api'  //backend en PythonAnywhere
+  : 'http://localhost:8000/api';                  // Desarrollo local
 
 const api = axios.create({
   baseURL: API_URL,
@@ -37,7 +40,6 @@ api.interceptors.response.use(
 );
 
 export const socialAuthAPI = {
-  // CORRIGIDO: Removido /auth/
   googleLogin: (token) => api.post('/google-login/', { token }),
   appleLogin: (token, firstName = '', lastName = '') => 
     api.post('/apple-login/', { 
@@ -48,7 +50,6 @@ export const socialAuthAPI = {
 };
 
 export const authAPI = {
-  // CORRIGIDO: Removido /auth/
   register: (data) => api.post('/register/', data),
   login: (data) => api.post('/login/', data),
   getProfile: () => api.get('/user/'),
