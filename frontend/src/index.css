@@ -1,0 +1,382 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definindo variáveis CSS personalizadas */
+:root {
+  --twitter-blue: #1d9bf0;
+  --twitter-dark-blue: #1a8cd8;
+  --transition-default: 200ms ease-in-out;
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --z-index-max: 2147483647;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 
+                 'Roboto', 'Segoe UI Emoji', 'Segoe UI Symbol', 
+                 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 
+                 'Droid Sans', 'Helvetica Neue', sans-serif;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Seleção personalizada */
+  ::selection {
+    @apply bg-twitter-blue/20 text-gray-900;
+  }
+
+  /* Scrollbar para todos os navegadores modernos */
+  :where(:not(html, iframe, canvas, img, svg, video)):not(svg, symbol) {
+    &::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      @apply bg-gray-100;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      @apply bg-gray-400 rounded-full hover:bg-gray-500;
+      transition: background-color var(--transition-default);
+    }
+  }
+
+  /* Scrollbar para Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #f3f4f6;
+  }
+
+  /* Remove outline para elementos interativos quando não em foco */
+  :focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+
+  /* Foco acessível */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-twitter-blue;
+  }
+}
+
+@layer components {
+  /* Botões */
+  .btn {
+    @apply font-semibold rounded-full transition-all duration-200 
+           disabled:opacity-50 disabled:cursor-not-allowed 
+           active:scale-[0.98] focus:outline-none;
+  }
+  
+  .btn-primary {
+    @apply btn bg-twitter-blue text-white 
+           hover:bg-twitter-darkBlue focus:ring-2 focus:ring-twitter-blue/50;
+  }
+
+  .btn-secondary {
+    @apply btn border border-gray-300 text-gray-700 
+           hover:bg-gray-50 focus:ring-2 focus:ring-gray-300/50;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-700 hover:bg-gray-100;
+  }
+
+  /* Inputs e formulários */
+  .input-field {
+    @apply w-full p-3 border border-gray-300 rounded-lg bg-white
+           focus:outline-none focus:border-twitter-blue 
+           focus:ring-2 focus:ring-twitter-blue/50
+           placeholder:text-gray-500 disabled:bg-gray-100;
+  }
+
+  .tweet-textarea {
+    @apply w-full p-3 text-lg border-none bg-transparent
+           focus:outline-none resize-none placeholder-gray-500
+           min-h-[120px] max-h-[400px];
+  }
+
+  /* Cards e containers */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 
+           transition-shadow hover:shadow-md;
+  }
+
+  .post-card {
+    @apply card p-4 hover:bg-gray-50/80 cursor-pointer;
+  }
+
+  /* Avatar e imagens */
+  .avatar {
+    @apply rounded-full object-cover flex-shrink-0;
+  }
+
+  .avatar-sm {
+    @apply avatar w-10 h-10;
+  }
+
+  .avatar-md {
+    @apply avatar w-12 h-12;
+  }
+
+  .avatar-lg {
+    @apply avatar w-16 h-16;
+  }
+
+  /* Layout */
+  .container-responsive {
+    @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Mobile bottom nav spacing */
+  .pb-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  /* Utilidades de layout */
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .flex-between {
+    @apply flex items-center justify-between;
+  }
+}
+
+@layer utilities {
+  /* Animações */
+  .animate-modal-enter {
+    animation: modalEnter 0.3s ease-out forwards;
+  }
+  
+  .animate-modal-exit {
+    animation: modalExit 0.2s ease-in forwards;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-scale-up {
+    animation: scaleUp 0.2s ease-out;
+  }
+
+  /* Transições CSS para React Transition Group */
+  .menu-enter {
+    transform: translateX(-100%);
+  }
+
+  .menu-enter-active {
+    transform: translateX(0);
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .menu-exit {
+    transform: translateX(0);
+  }
+
+  .menu-exit-active {
+    transform: translateX(-100%);
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Overlay e modal ultimate */
+  .modal-overlay-ultimate {
+    position: fixed !important;
+    inset: 0 !important;
+    background-color: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    z-index: var(--z-index-max) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .modal-content-ultimate {
+    position: relative !important;
+    background-color: white !important;
+    border-radius: 16px !important;
+    box-shadow: var(--shadow-modal) !important;
+    max-width: 600px !important;
+    width: 90vw !important;
+    max-height: 90vh !important;
+    min-height: 200px !important;
+    margin: 1rem !important;
+    z-index: var(--z-index-max) !important;
+    overflow: hidden !important;
+    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Tweet FAB para mobile */
+  .tweet-fab {
+    @apply fixed bottom-20 right-4 sm:right-6 bg-twitter-blue text-white 
+           p-3 sm:p-4 rounded-full shadow-2xl hover:bg-twitter-darkBlue 
+           transition-all duration-200 hover:shadow-3xl z-40
+           active:scale-95 focus:outline-none focus:ring-2 
+           focus:ring-twitter-blue/50;
+    /* Adiciona padding para safe area no iOS */
+    bottom: max(5rem, env(safe-area-inset-bottom, 5rem));
+  }
+
+  /* Esconder scrollbar mas manter funcionalidade */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Responsividade */
+  .mobile-only {
+    @apply block md:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden md:block;
+  }
+  
+  .tablet-only {
+    @apply hidden sm:block lg:hidden;
+  }
+
+  /* Espaçamento responsivo */
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-6;
+  }
+}
+
+/* Keyframes para animações */
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalExit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsividade */
+@media (max-width: 640px) {
+  .tweet-textarea {
+    min-height: 100px;
+    max-height: 300px;
+  }
+  
+  .modal-content-ultimate {
+    width: 95vw !important;
+    margin: 0.5rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Espaçamento seguro para iPhone X+ */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .container-responsive {
+    @apply px-6;
+  }
+}
+
+/* Dark mode (opcional - se for implementar) */
+@media (prefers-color-scheme: dark) {
+  .dark\:invert {
+    filter: invert(1);
+  }
+}
+
+/* Impressão */
+@media print {
+  .tweet-fab,
+  .modal-overlay-ultimate {
+    display: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .btn-primary {
+    border: 2px solid black;
+  }
+  
+  .card {
+    border: 2px solid #1f2937;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
