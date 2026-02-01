@@ -92,6 +92,9 @@ REST_FRAMEWORK = {
     ]
 }
 
+# Configurações OAuth2 Google
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 # Configurações CORS 
 CORS_ALLOW_ALL_ORIGINS = True  
 

@@ -7,13 +7,19 @@ from .views import (
 )
 
 urlpatterns = [
-    # Autenticação
+    # URLs antigas (para compatibilidade)
+    path('auth/register/', RegisterAPI.as_view(), name='register-old'),
+    path('auth/login/', LoginAPI.as_view(), name='login-old'),
+    path('auth/google-login/', GoogleLoginAPI.as_view(), name='google-login-old'),
+    path('auth/apple-login/', AppleLoginAPI.as_view(), name='apple-login-old'),
+    path('auth/user/', UserAPI.as_view(), name='user-old'),
+    path('auth/profile/update/', ProfileUpdateAPI.as_view(), name='profile-update-old'),
+    
+    # URLs novas (sem /auth/)
     path('register/', RegisterAPI.as_view(), name='register'),
     path('login/', LoginAPI.as_view(), name='login'),
     path('google-login/', GoogleLoginAPI.as_view(), name='google-login'),
     path('apple-login/', AppleLoginAPI.as_view(), name='apple-login'),  
-    
-    # Usuário atual
     path('user/', UserAPI.as_view(), name='user'),
     path('profile/update/', ProfileUpdateAPI.as_view(), name='profile-update'),
     
