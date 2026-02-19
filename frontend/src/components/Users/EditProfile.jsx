@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaCamera, FaImage } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../services/api';
 
 const EditProfile = ({ isOpen, onClose, onUpdate }) => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -15,6 +16,13 @@ const EditProfile = ({ isOpen, onClose, onUpdate }) => {
   const [previewBanner, setPreviewBanner] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_new_password: ''
+  });
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,9 +81,54 @@ const EditProfile = ({ isOpen, onClose, onUpdate }) => {
   const removeBannerImage = () => {
     setFormData(prev => ({
       ...prev,
-      banner_image: 'REMOVE' // Special flag to remove banner
+      banner_image: 'REMOVE'
     }));
     setPreviewBanner('');
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMessage('');
+
+    if (!passwordData.current_password || !passwordData.new_password || !passwordData.confirm_new_password) {
+      setPasswordMessage('Preencha todos os campos de senha.');
+      return;
+    }
+
+    try {
+      await authAPI.changePassword(passwordData);
+      setPasswordMessage('Senha alterada com sucesso.');
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_new_password: ''
+      });
+    } catch (err) {
+      const apiError = err.response?.data;
+      if (typeof apiError === 'string') {
+        setPasswordMessage(apiError);
+      } else if (apiError?.detail) {
+        setPasswordMessage(apiError.detail);
+      } else if (apiError?.confirm_new_password?.[0]) {
+        setPasswordMessage(apiError.confirm_new_password[0]);
+      } else if (apiError?.new_password?.[0]) {
+        setPasswordMessage(apiError.new_password[0]);
+      } else if (apiError?.current_password?.[0]) {
+        setPasswordMessage(apiError.current_password[0]);
+      } else if (apiError?.non_field_errors?.[0]) {
+        setPasswordMessage(apiError.non_field_errors[0]);
+      } else {
+        setPasswordMessage('Erro ao alterar senha.');
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -96,23 +149,26 @@ const EditProfile = ({ isOpen, onClose, onUpdate }) => {
       if (formData.bio !== user.bio) {
         formDataToSend.append('bio', formData.bio);
       }
-      if (formData.profile_picture) {
+      
+      if (formData.profile_picture instanceof File) {
         formDataToSend.append('profile_picture', formData.profile_picture);
       }
-      if (formData.banner_image) {
-        if (formData.banner_image === 'REMOVE') {
-          formDataToSend.append('banner_image', '');
-        } else {
-          formDataToSend.append('banner_image', formData.banner_image);
-        }
+      
+      if (formData.banner_image instanceof File) {
+        formDataToSend.append('banner_image', formData.banner_image);
+      } else if (formData.banner_image === 'REMOVE') {
+        formDataToSend.append('banner_image', '');
       }
 
-      const updatedUser = await updateProfile(formDataToSend);
-      if (onUpdate) onUpdate(updatedUser);
+      const response = await authAPI.updateProfile(formDataToSend);
+      
+      localStorage.setItem('user', JSON.stringify(response.data));
+      
+      if (onUpdate) onUpdate(response.data);
       onClose();
     } catch (err) {
+      console.error('Erro detalhado:', err.response?.data);
       setError('Erro ao atualizar perfil. Tente novamente.');
-      console.error('Erro:', err);
     } finally {
       setLoading(false);
     }
@@ -193,7 +249,7 @@ const EditProfile = ({ isOpen, onClose, onUpdate }) => {
                 )}
               </div>
 
-              {/* Profile Picture - Positioned over banner with higher z-index */}
+              {/* Profile Picture */}
               <div className="absolute -bottom-10 left-4 z-20">
                 <div className="relative">
                   <div className="relative group">
@@ -269,6 +325,71 @@ const EditProfile = ({ isOpen, onClose, onUpdate }) => {
                 {formData.bio.length}/160
               </div>
             </div>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowPasswordForm((prev) => !prev)}
+              className="text-sm text-gray-600 hover:text-twitter-blue"
+            >
+              {showPasswordForm ? 'Ocultar alteração de senha' : 'Alterar senha'}
+            </button>
+
+            {showPasswordForm && (
+              <div className="mt-3 space-y-3">
+                <h3 className="font-semibold text-gray-900">Alterar senha</h3>
+
+                {passwordMessage && (
+                  <div className={`text-sm px-3 py-2 rounded ${
+                    passwordMessage.includes('sucesso') 
+                      ? 'bg-green-50 border border-green-200 text-green-700'
+                      : 'bg-blue-50 border border-blue-200 text-blue-700'
+                  }`}>
+                    {passwordMessage}
+                  </div>
+                )}
+
+                <input
+                  type="password"
+                  name="current_password"
+                  value={passwordData.current_password}
+                  onChange={handlePasswordChange}
+                  className="input-field"
+                  placeholder="Senha atual"
+                  disabled={loading}
+                />
+
+                <input
+                  type="password"
+                  name="new_password"
+                  value={passwordData.new_password}
+                  onChange={handlePasswordChange}
+                  className="input-field"
+                  placeholder="Nova senha"
+                  disabled={loading}
+                />
+
+                <input
+                  type="password"
+                  name="confirm_new_password"
+                  value={passwordData.confirm_new_password}
+                  onChange={handlePasswordChange}
+                  className="input-field"
+                  placeholder="Confirmar nova senha"
+                  disabled={loading}
+                />
+
+                <button
+                  type="button"
+                  onClick={handleChangePassword}
+                  className="btn-secondary"
+                  disabled={loading}
+                >
+                  Atualizar senha
+                </button>
+              </div>
+            )}
           </div>
         </form>
       </div>

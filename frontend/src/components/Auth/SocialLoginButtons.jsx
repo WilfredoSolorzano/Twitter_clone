@@ -31,7 +31,7 @@ const SocialLoginButtons = ({ onSuccess, onError }) => {
     } else {
       setEmail(`usuario.apple${randomId}@exemplo.com`);
     }
-    setPassword('senha123'); // Senha sugerida
+    setPassword('senha123'); 
   };
 
   // Fechar modal
@@ -348,19 +348,6 @@ const SocialLoginButtons = ({ onSuccess, onError }) => {
                     Cancelar e voltar
                   </button>
                 </div>
-              </div>
-
-              {/* Informações Adicionais */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  <strong>Nota:</strong> Esta é uma simulação de login social.
-                  {selectedProvider === 'google' 
-                    ? ' Em produção, seria usado o Google Sign In oficial.'
-                    : ' Em produção, seria usado o Apple Sign In oficial.'}
-                </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  <strong>Dica:</strong> Use os dados sugeridos ou insira seus próprios.
-                </p>
               </div>
             </div>
           </div>

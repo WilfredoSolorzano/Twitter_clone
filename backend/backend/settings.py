@@ -17,13 +17,15 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',  # Token Authentication
     'corsheaders',  
-    'knox',
     
     # Local apps
     'users',
     'posts',
     'interactions',
+    'chats',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -85,30 +87,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configurações REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'knox.auth.TokenAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ]
 }
 
-# Configurações OAuth2 Google
-GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 # Configurações CORS 
-CORS_ALLOW_ALL_ORIGINS = True  
+CORS_ALLOW_ALL_ORIGINS = True
 
-# Opcional: para especificar origens
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.1.6:3000", 
 ]
 
-# Para permitir cookies/headers de autenticação
 CORS_ALLOW_CREDENTIALS = True
 
-# Headers permitidos
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -121,7 +117,6 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Métodos permitidos
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',

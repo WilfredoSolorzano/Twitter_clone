@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaComment, FaRetweet, FaShare, FaEllipsisH } from 'react-icons/fa';
+import { 
+  FaHeart, 
+  FaRegHeart, 
+  FaComment, 
+  FaRetweet, 
+  FaShare, 
+  FaEllipsisH,
+  FaMapMarkerAlt
+} from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '../../context/AuthContext';
@@ -12,7 +20,9 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
   const [comments, setComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [loadingLike, setLoadingLike] = useState(false);
+  const [loadingRetweet, setLoadingRetweet] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showShareOptions, setShowShareOptions] = useState(false);
   const { user } = useAuth();
 
   const handleLike = async () => {
@@ -26,6 +36,39 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
     } finally {
       setLoadingLike(false);
     }
+  };
+
+  const handleRetweet = async () => {
+    if (loadingRetweet) return;
+    setLoadingRetweet(true);
+    try {
+      await postsAPI.retweetPost(post.id);
+      alert('Post retweetado com sucesso!');
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Erro ao retweetar:', error);
+      alert('Erro ao retweetar. Tente novamente.');
+    } finally {
+      setLoadingRetweet(false);
+    }
+  };
+
+  const handleShare = () => {
+    setShowShareOptions(!showShareOptions);
+  };
+
+  const copyToClipboard = () => {
+    const url = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(url);
+    alert('Link copiado para a área de transferência!');
+    setShowShareOptions(false);
+  };
+
+  const shareViaTwitter = () => {
+    const text = encodeURIComponent(post.content);
+    const url = encodeURIComponent(`${window.location.origin}/post/${post.id}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+    setShowShareOptions(false);
   };
 
   const loadComments = async () => {
@@ -52,6 +95,8 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
       setCommentContent('');
       const response = await commentsAPI.getComments(post.id);
       setComments(response.data);
+      // Atualizar contador de comentários
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Erro ao comentar:', error);
     }
@@ -70,7 +115,7 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
   };
 
   return (
-    <div className="post-card border-b border-gray-200 last:border-b-0">
+    <div className="post-card border-b border-gray-200 last:border-b-0 p-4 hover:bg-gray-50 transition-colors">
       <div className="flex space-x-3">
         {/* Avatar */}
         <Link to={`/profile/${post.user.username}`}>
@@ -83,7 +128,7 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
 
         <div className="flex-1">
           {/* Header */}
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center space-x-2">
               <Link to={`/profile/${post.user.username}`} className="font-bold text-gray-900 hover:underline">
                 {post.user.username}
@@ -120,6 +165,14 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
             )}
           </div>
 
+          {/* Localização */}
+          {post.location && (
+            <div className="flex items-center space-x-1 text-gray-500 text-sm mb-2">
+              <FaMapMarkerAlt className="text-twitter-blue" size={12} />
+              <span>{post.location}</span>
+            </div>
+          )}
+
           {/* Content */}
           <p className="text-gray-900 mb-3 whitespace-pre-wrap">{post.content}</p>
           
@@ -136,6 +189,7 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
 
           {/* Actions */}
           <div className="flex items-center justify-between max-w-md mt-4">
+            {/* Comentários */}
             <button
               onClick={loadComments}
               className="flex items-center space-x-2 text-gray-500 hover:text-twitter-blue group"
@@ -146,13 +200,19 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
               <span className="text-sm">{post.comments_count || 0}</span>
             </button>
 
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 group">
+            {/* Retweet */}
+            <button
+              onClick={handleRetweet}
+              disabled={loadingRetweet}
+              className="flex items-center space-x-2 text-gray-500 hover:text-green-500 group"
+            >
               <div className="p-2 rounded-full group-hover:bg-green-50">
                 <FaRetweet className="h-5 w-5" />
               </div>
-              <span className="text-sm">0</span>
+              <span className="text-sm">{post.retweets_count || 0}</span>
             </button>
 
+            {/* Like */}
             <button
               onClick={handleLike}
               disabled={loadingLike}
@@ -168,14 +228,37 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
               <span className="text-sm">{post.likes_count || 0}</span>
             </button>
 
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-twitter-blue group">
-              <div className="p-2 rounded-full group-hover:bg-blue-50">
-                <FaShare className="h-5 w-5" />
-              </div>
-            </button>
+            {/* Compartilhar */}
+            <div className="relative">
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-gray-500 hover:text-twitter-blue group"
+              >
+                <div className="p-2 rounded-full group-hover:bg-blue-50">
+                  <FaShare className="h-5 w-5" />
+                </div>
+              </button>
+              
+              {showShareOptions && (
+                <div className="absolute bottom-full mb-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-20 min-w-[200px]">
+                  <button
+                    onClick={copyToClipboard}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    📋 Copiar link
+                  </button>
+                  <button
+                    onClick={shareViaTwitter}
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                  >
+                    𝕏 Compartilhar no Twitter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Comments */}
+          {/* Comments Section */}
           {showComments && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <form onSubmit={handleComment} className="flex space-x-3 mb-4">
@@ -196,17 +279,17 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
                 <button
                   type="submit"
                   disabled={!commentContent.trim()}
-                  className="btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-twitter-blue hover:bg-twitter-darkBlue text-white font-bold px-4 py-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Responder
                 </button>
               </form>
 
               {loadingComments ? (
-                <div className="text-center text-gray-500">Carregando comentários...</div>
-              ) : (
+                <div className="text-center text-gray-500 py-4">Carregando comentários...</div>
+              ) : comments.length > 0 ? (
                 comments.map((comment) => (
-                  <div key={comment.id} className="flex space-x-3 mb-3 last:mb-0">
+                  <div key={comment.id} className="flex space-x-3 mb-4 last:mb-0">
                     <img
                       src={comment.user.profile_picture || '/default-avatar.png'}
                       alt={comment.user.username}
@@ -226,6 +309,8 @@ const PostItem = ({ post, onDelete, onUpdate }) => {
                     </div>
                   </div>
                 ))
+              ) : (
+                <p className="text-center text-gray-500 py-4">Nenhum comentário ainda.</p>
               )}
             </div>
           )}
