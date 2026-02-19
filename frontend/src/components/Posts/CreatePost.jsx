@@ -3,10 +3,9 @@ import ReactDOM from "react-dom";
 import {
   FaImage,
   FaSmile,
-  FaCalendarAlt,
   FaMapMarkerAlt,
   FaTimes,
-} from "react-icons/fa";
+} from "react-icons/fa"; 
 import { useAuth } from "../../context/AuthContext";
 import { postsAPI } from "../../services/api";
 
@@ -17,18 +16,28 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [charCount, setCharCount] = useState(0);
+  const [location, setLocation] = useState("");
+  const [showLocationInput, setShowLocationInput] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const { user } = useAuth();
   const textareaRef = useRef(null);
   const modalRef = useRef(null);
+  const emojiPickerRef = useRef(null);
 
   const MAX_CHARS = 280;
+
+  
+  const emojis = ['😊', '😂', '❤️', '👍', '🔥', '🎉', '😢', '😡', '😍', '🥳', '😎', '💯'];
 
   const handleCloseModal = useCallback(() => {
     setContent("");
     setCharCount(0);
     removeImage();
     setError("");
+    setLocation("");
+    setShowLocationInput(false);
+    setShowEmojiPicker(false);
     if (onClose) {
       onClose();
     }
@@ -41,21 +50,28 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
       textareaRef.current.focus();
     }
 
-    // Fechar modal ao pressionar ESC
+   
     const handleEscape = (e) => {
       if (e.key === "Escape" && onClose) {
         handleCloseModal();
       }
     };
 
-    // Fechar modal ao clicar fora
+   
     const handleClickOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target)) {
         handleCloseModal();
       }
     };
 
-    // Bloquear scroll
+   
+    const handleClickOutsideEmoji = (e) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+  
     document.body.style.overflow = "hidden";
     document.body.style.position = "fixed";
     document.body.style.width = "100%";
@@ -63,12 +79,13 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
 
     document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutsideEmoji);
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutsideEmoji);
 
-      // Restaurar scroll
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.width = "";
@@ -106,10 +123,16 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
     }
   };
 
+  const addEmoji = (emoji) => {
+    setContent(prev => prev + emoji);
+    setCharCount(prev => prev + emoji.length);
+    setShowEmojiPicker(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim()) {
-      setError("Escreva algo para tweetar");
+    if (!content.trim() && !image) {
+      setError("Escreva algo ou adicione uma imagem para tweetar");
       return;
     }
 
@@ -117,10 +140,20 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
     setError("");
 
     try {
-      await postsAPI.createPost({ content, image });
+      const postData = {
+        content: content.trim(),
+        image: image,
+        location: location.trim() || undefined
+      };
+
+      await postsAPI.createPost(postData);
+      
       setContent("");
       setCharCount(0);
       removeImage();
+      setLocation("");
+      setShowLocationInput(false);
+      setShowEmojiPicker(false);
 
       if (onPostCreated) {
         onPostCreated();
@@ -137,7 +170,7 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
     }
   };
 
-  // Se não for modal, renderizar o componente normal
+ 
   if (!isModal) {
     return (
       <div className="card p-4 mb-4 bg-white rounded-xl shadow-sm">
@@ -151,7 +184,10 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
           <img
             src={user?.profile_picture || "/default-avatar.png"}
             alt={user?.username}
-            className="w-12 h-12 rounded-full flex-shrink-0"
+            className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
+            onError={(e) => {
+              e.target.src = '/default-avatar.png';
+            }}
           />
 
           <form onSubmit={handleSubmit} className="flex-1">
@@ -163,17 +199,10 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
               className="w-full p-3 text-lg border-none focus:outline-none resize-none placeholder-gray-500"
               rows="3"
               disabled={loading}
+              maxLength={MAX_CHARS}
             />
 
-            {/* Contador de caracteres */}
-            <div className="flex justify-end items-center mb-3">
-              <div
-                className={`text-sm ${charCount > MAX_CHARS * 0.9 ? "text-red-500" : "text-gray-500"}`}
-              >
-                {charCount}/{MAX_CHARS}
-              </div>
-            </div>
-
+            {/* Preview da imagem */}
             {imagePreview && (
               <div className="relative mt-3 mb-3">
                 <button
@@ -191,6 +220,62 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
               </div>
             )}
 
+            {/* Localização */}
+            {showLocationInput && (
+              <div className="mb-3 flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                <FaMapMarkerAlt className="text-twitter-blue flex-shrink-0" />
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Adicionar localização"
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm outline-none"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocation("");
+                    setShowLocationInput(false);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <FaTimes className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div 
+                ref={emojiPickerRef}
+                className="mb-3 p-2 border border-gray-200 rounded-lg bg-white shadow-lg"
+              >
+                <div className="flex flex-wrap gap-2">
+                  {emojis.map((emoji, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => addEmoji(emoji)}
+                      className="text-2xl hover:bg-gray-100 p-1 rounded transition-colors"
+                      disabled={loading}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contador de caracteres */}
+            <div className="flex justify-end items-center mb-3">
+              <div
+                className={`text-sm ${charCount > MAX_CHARS * 0.9 ? "text-red-500" : "text-gray-500"}`}
+              >
+                {charCount}/{MAX_CHARS}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
               <div className="flex space-x-4">
                 <label className="cursor-pointer text-twitter-blue hover:text-twitter-darkBlue transition-colors">
@@ -203,30 +288,32 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                   />
                   <FaImage className="h-5 w-5" />
                 </label>
+                
                 <button
                   type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="text-twitter-blue hover:text-twitter-darkBlue transition-colors"
+                  disabled={loading}
                 >
                   <FaSmile className="h-5 w-5" />
                 </button>
+
                 <button
                   type="button"
+                  onClick={() => setShowLocationInput(!showLocationInput)}
                   className="text-twitter-blue hover:text-twitter-darkBlue transition-colors"
-                >
-                  <FaCalendarAlt className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  className="text-twitter-blue hover:text-twitter-darkBlue transition-colors"
+                  disabled={loading}
                 >
                   <FaMapMarkerAlt className="h-5 w-5" />
                 </button>
+
+                {/* 👇 BOTÃO DO CALENDÁRIO REMOVIDO */}
               </div>
 
               <button
                 type="submit"
-                disabled={!content.trim() || loading || charCount > MAX_CHARS}
-                className="bg-twitter-blue hover:bg-twitter-darkBlue text-white font-bold py-2 px-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={(!content.trim() && !image) || loading || charCount > MAX_CHARS}
+                className="bg-twitter-blue hover:bg-twitter-darkBlue text-white font-bold py-2 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -263,7 +350,7 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
     );
   }
 
-  // Usar Portal React para garantir que a modal fique acima de tudo
+  // Versão Modal com as novas funcionalidades
   return ReactDOM.createPortal(
     <div
       style={{
@@ -333,7 +420,7 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
 
           <button
             onClick={handleSubmit}
-            disabled={!content.trim() || loading || charCount > MAX_CHARS}
+            disabled={(!content.trim() && !image) || loading || charCount > MAX_CHARS}
             style={{
               backgroundColor: "#000000",
               color: "white",
@@ -341,12 +428,8 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
               padding: "0.5rem 1.5rem",
               borderRadius: "9999px",
               transition: "all 0.2s",
-              opacity:
-                !content.trim() || loading || charCount > MAX_CHARS ? 0.5 : 1,
-              cursor:
-                !content.trim() || loading || charCount > MAX_CHARS
-                  ? "not-allowed"
-                  : "pointer",
+              opacity: (!content.trim() && !image) || loading || charCount > MAX_CHARS ? 0.5 : 1,
+              cursor: (!content.trim() && !image) || loading || charCount > MAX_CHARS ? "not-allowed" : "pointer",
             }}
             onMouseEnter={(e) => {
               if (!e.currentTarget.disabled) {
@@ -395,6 +478,10 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                 height: "3rem",
                 borderRadius: "9999px",
                 flexShrink: 0,
+                objectFit: "cover",
+              }}
+              onError={(e) => {
+                e.target.src = '/default-avatar.png';
               }}
             />
 
@@ -417,26 +504,10 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                 }}
                 rows={4}
                 disabled={loading}
+                maxLength={MAX_CHARS}
               />
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  alignItems: "center",
-                  marginBottom: "1rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "0.875rem",
-                    color: charCount > MAX_CHARS * 0.9 ? "#ef4444" : "#6b7280",
-                  }}
-                >
-                  {charCount}/{MAX_CHARS}
-                </div>
-              </div>
-
+              {/* Preview da imagem na modal */}
               {imagePreview && (
                 <div
                   style={{
@@ -464,12 +535,10 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                       cursor: "pointer",
                     }}
                     onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        "rgba(0,0,0,0.8)")
+                      (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.8)")
                     }
                     onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        "rgba(0,0,0,0.6)")
+                      (e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.6)")
                     }
                     aria-label="Remover imagem"
                   >
@@ -486,6 +555,119 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                   />
                 </div>
               )}
+
+              {/* Localização na modal */}
+              {showLocationInput && (
+                <div
+                  style={{
+                    marginBottom: "1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.5rem",
+                    backgroundColor: "#f9fafb",
+                    borderRadius: "0.5rem",
+                  }}
+                >
+                  <FaMapMarkerAlt style={{ color: "#1DA1F2", flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Adicionar localização"
+                    style={{
+                      flex: 1,
+                      backgroundColor: "transparent",
+                      border: "none",
+                      outline: "none",
+                      fontSize: "0.875rem",
+                    }}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocation("");
+                      setShowLocationInput(false);
+                    }}
+                    style={{
+                      color: "#6b7280",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FaTimes style={{ width: "0.75rem", height: "0.75rem" }} />
+                  </button>
+                </div>
+              )}
+
+              {/* Emoji Picker na modal */}
+              {showEmojiPicker && (
+                <div
+                  ref={emojiPickerRef}
+                  style={{
+                    marginBottom: "1rem",
+                    padding: "0.5rem",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "white",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {emojis.map((emoji, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => addEmoji(emoji)}
+                        style={{
+                          fontSize: "1.5rem",
+                          padding: "0.25rem",
+                          borderRadius: "0.25rem",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f3f4f6")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor = "transparent")
+                        }
+                        disabled={loading}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  marginBottom: "1rem",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "0.875rem",
+                    color: charCount > MAX_CHARS * 0.9 ? "#ef4444" : "#6b7280",
+                  }}
+                >
+                  {charCount}/{MAX_CHARS}
+                </div>
+              </div>
 
               <div
                 style={{
@@ -524,6 +706,7 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
 
                   <button
                     type="button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     style={{
                       color: "#000000",
                       padding: "0.5rem",
@@ -539,12 +722,14 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.backgroundColor = "transparent")
                     }
+                    disabled={loading}
                   >
                     <FaSmile style={{ width: "1.5rem", height: "1.5rem" }} />
                   </button>
 
                   <button
                     type="button"
+                    onClick={() => setShowLocationInput(!showLocationInput)}
                     style={{
                       color: "#000000",
                       padding: "0.5rem",
@@ -560,33 +745,9 @@ const CreatePost = ({ onPostCreated, isModal = false, onClose }) => {
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.backgroundColor = "transparent")
                     }
+                    disabled={loading}
                   >
-                    <FaCalendarAlt
-                      style={{ width: "1.5rem", height: "1.5rem" }}
-                    />
-                  </button>
-
-                  <button
-                    type="button"
-                    style={{
-                      color: "#000000",
-                      padding: "0.5rem",
-                      borderRadius: "9999px",
-                      transition: "all 0.2s",
-                      border: "none",
-                      backgroundColor: "transparent",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f3f4f6")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <FaMapMarkerAlt
-                      style={{ width: "1.5rem", height: "1.5rem" }}
-                    />
+                    <FaMapMarkerAlt style={{ width: "1.5rem", height: "1.5rem" }} />
                   </button>
                 </div>
               </div>

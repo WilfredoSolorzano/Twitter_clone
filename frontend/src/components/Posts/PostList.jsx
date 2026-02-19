@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PostItem from './PostItem';
 import { postsAPI } from '../../services/api';
 
-const PostList = ({ feed = false }) => {
+const PostList = ({ feed = false, username = null, refreshTrigger = 0 }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -10,25 +10,54 @@ const PostList = ({ feed = false }) => {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     setError('');
+    
+    const token = localStorage.getItem('access_token');
+    console.log(`🔍 PostList - Token:`, token ? '✅' : '❌');
+    
     try {
-      const response = feed 
-        ? await postsAPI.getFeed()
-        : await postsAPI.getPosts();
+      console.log(`📤 PostList - Carregando posts:`, { feed, username });
+      
+      let response;
+      if (username) {
+        // 👈 Se tem username, busca posts do usuário específico
+        console.log(`👤 Buscando posts de: ${username}`);
+        response = await postsAPI.getUserPosts(username);
+      } else if (feed) {
+        console.log('📱 Buscando feed');
+        response = await postsAPI.getFeed();
+      } else {
+        console.log('🌍 Buscando todos os posts');
+        response = await postsAPI.getPosts();
+      }
+      
+      console.log('✅ PostList - Posts carregados:', response.data);
+      
+      // Log para verificar se os posts são do usuário correto
+      if (username) {
+        response.data.forEach(post => {
+          console.log(`Post ${post.id} é de: ${post.user?.username}`);
+        });
+      }
+      
       setPosts(response.data);
     } catch (err) {
-      setError('Erro ao carregar postagens');
-      console.error('Erro:', err);
+      console.error('❌ PostList - Erro:', err);
+      if (err.response?.status === 401) {
+        setError('Sessão expirada. Faça login novamente.');
+      } else {
+        setError('Erro ao carregar postagens');
+      }
     } finally {
       setLoading(false);
     }
-  }, [feed]);
+  }, [feed, username]);
 
   useEffect(() => {
     loadPosts();
-  }, [feed, loadPosts]);
+  }, [feed, username, loadPosts, refreshTrigger]);
 
   const handlePostDeleted = (postId) => {
-    setPosts(posts.filter(post => post.id !== postId));
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
   };
 
   const handlePostUpdated = () => {
@@ -46,20 +75,23 @@ const PostList = ({ feed = false }) => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded my-4">
-        {error}
+        <p>{error}</p>
+        {error === 'Sessão expirada. Faça login novamente.' && (
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="mt-2 text-sm underline"
+          >
+            Ir para login
+          </button>
+        )}
       </div>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          {feed ? 'Siga alguns usuários para ver postagens!' : 'Nenhuma postagem encontrada.'}
-        </h3>
-        <p className="text-gray-600">
-          {feed ? 'Comece seguindo outros usuários para ver suas postagens aqui.' : 'Seja o primeiro a postar!'}
-        </p>
+      <div className="text-center py-12 text-gray-500">
+        {username ? 'Nenhum post encontrado' : feed ? 'Nenhum post no feed' : 'Nenhum post encontrado'}
       </div>
     );
   }

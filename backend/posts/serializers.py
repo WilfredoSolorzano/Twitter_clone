@@ -6,12 +6,14 @@ class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     likes_count = serializers.IntegerField(read_only=True)
     comments_count = serializers.IntegerField(read_only=True)
+    retweets_count = serializers.IntegerField(read_only=True) 
     is_liked = serializers.SerializerMethodField()
+    is_retweeted = serializers.SerializerMethodField() 
     
     class Meta:
         model = Post
-        fields = ['id', 'user', 'content', 'image', 'created_at', 
-                 'likes_count', 'comments_count', 'is_liked']
+        fields = ['id', 'user', 'content', 'image', 'location', 'created_at', 
+                 'likes_count', 'comments_count', 'retweets_count', 'is_liked', 'is_retweeted']
         read_only_fields = ['user', 'created_at']
     
     def get_is_liked(self, obj):
@@ -19,8 +21,14 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(user=request.user).exists()
         return False
+    
+    def get_is_retweeted(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.retweets.filter(id=request.user.id).exists()
+        return False
 
 class PostCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ['content', 'image']
+        fields = ['content', 'image', 'location']

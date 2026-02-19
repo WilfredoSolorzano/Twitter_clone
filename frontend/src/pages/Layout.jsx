@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "../components/Layout/Navbar";
-import MobileNavbar from "../components/Layout/MobileNavbar"; // NOVO
+import MobileNavbar from "../components/Layout/MobileNavbar"; 
 import MobileBottomNav from "../components/Layout/MobileBottomNav";
 import RightSidebar from "../components/Layout/RightSidebar";
 

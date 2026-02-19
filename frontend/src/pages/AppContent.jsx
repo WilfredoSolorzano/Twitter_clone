@@ -8,12 +8,12 @@ import Layout from './Layout';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
 
-// Lazy loading para componentes privados (melhor performance)
+// Lazy loading para componentes privados 
 const Home = lazy(() => import('./Home'));
 const Explore = lazy(() => import('./Explore'));
 const ProfilePage = lazy(() => import('./ProfilePage'));
 const Notifications = lazy(() => import('./Notifications'));
-const Messages = lazy(() => import('./Messages'));
+const Messages = lazy(() => import('./Messages')); 
 const Bookmarks = lazy(() => import('./Bookmarks'));
 const More = lazy(() => import('./More'));
 
@@ -40,7 +40,7 @@ const ProtectedRoutes = () => (
       <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
       <Route path="/explore" element={<PrivateRoute><Explore /></PrivateRoute>} />
       <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-      <Route path="/messages" element={<PrivateRoute><Messages /></PrivateRoute>} />
+      <Route path="/messages" element={<Messages />} /> 
       <Route path="/bookmarks" element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
       <Route path="/more" element={<PrivateRoute><More /></PrivateRoute>} />
       <Route path="/profile/:username" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />

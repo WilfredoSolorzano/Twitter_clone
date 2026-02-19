@@ -5,11 +5,12 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('users.urls')), 
+    path('api/', include('users.urls')),
     path('api/posts/', include('posts.urls')),
-    path('api/interactions/', include('interactions.urls')),
+    path('api/chats/', include('chats.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/interactions/', include('interactions.urls')),  
 ]
 
-# Servir arquivos de mídia em desenvolvimento
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
