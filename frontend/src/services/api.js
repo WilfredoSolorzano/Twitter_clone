@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_URL = process.env.NODE_ENV === 'production' 
   ? 'https://wilfredo22.pythonanywhere.com/api'
   : 'http://localhost:8000/api';
-
+  
 const api = axios.create({
   baseURL: API_URL,
 });
